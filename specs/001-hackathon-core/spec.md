@@ -112,6 +112,15 @@ KuraSQL 的 relational semantics 以 **ISO SQL:2023** 為基準，但 Kurabase �
 - referential actions
 - schema object dependency
 - `RESTRICT / CASCADE`
+- immediate / deferred constraint validation
+
+語意要求：
+- NULL 遵循 SQL three-valued logic。
+- DEFAULT 在需要產生欄位值時求值，不在 migration 時固定成常數。
+- identity column 提供標準自動識別值語意，底層是否使用 sequence 不構成 contract。
+- generated column 的值由 expression 導出，不得被當作普通欄位任意寫入；physical storage 不構成 contract。
+- CHECK 為 TRUE 時通過、FALSE 時拒絕；UNKNOWN 依 SQL CHECK 語意視為通過。
+- deferred constraint 在 atomic transaction 的最終 commit 前驗證。
 
 代表性功能需要有正確 semantics；不追求 SQL standard 每個 corner case。
 
@@ -453,8 +462,11 @@ v1 function 需要能：
 - 呼叫其他 function
 - 使用 KuraSQL query capability
 - mutating function 參與 atomic transaction
+- SECURITY INVOKER / SECURITY DEFINER
 
-read-only function 可在 query layer 執行。
+SECURITY INVOKER 使用 caller authority；SECURITY DEFINER 使用 function 被明確授予的 definer authority。這些 authority 不得由 gateway 自行創造。
+
+read-only function 可在 query layer執行。
 
 mutating function：
 
@@ -493,21 +505,31 @@ Arbitrary HTTP、filesystem、不可驗證外部 machine state 不屬核心 atom
 ### Query
 
 - `.from().select()`
+- `*`、指定欄位、alias
 - nested FK relation
-- filters：常用 equality/comparison、`in`、`is`、`like/ilike`
+- 同一 relation 有多個 FK 時可明確指定 relation
+- nested relation 的 inner semantics（如 `!inner`）
+- referenced table filtering
+- JSON path selection
+- filters：`eq / neq / gt / gte / lt / lte / is / in / like / ilike / contains / containedBy / overlaps / match / not / or / filter`
+- 同一套 filter 可作用於 select / update / delete / table-returning RPC
 - `order`
 - `limit`
-- `range`
+- `range`（0-based、兩端 inclusive）
 - `single`
 - `maybeSingle`
+- exact count
 
 ### Mutation
 
 - `insert`
+- bulk insert
 - `update`
 - `delete`
 - upsert
-- mutation chaining `.select()`
+- `onConflict`
+- `ignoreDuplicates`
+- mutation 預設不回傳修改後 rows；chain `.select()` 時才回傳 representation
 
 ### RPC
 
@@ -530,6 +552,8 @@ Arbitrary HTTP、filesystem、不可驗證外部 machine state 不屬核心 atom
 ```
 
 不要求錯誤 code 完全複製 PostgreSQL/PostgREST，但 constraint、RLS、type、cardinality、transaction conflict 等錯誤必須可穩定辨識。
+
+`single()` 必須恰好一 row；`maybeSingle()` 允許 0 或 1 row，0 row 回 null，超過 1 row 則回 cardinality error。
 
 ---
 
