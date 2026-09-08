@@ -332,7 +332,7 @@ read snapshot
 
 對 arbitrary set-based mutation，如何證明 gateway 沒漏掉符合條件的 row，是已知問題。
 
-黑客松核心不要求解完；ZK execution proof 是 stretch / extension 候選。
+黑客松版本不解這個問題；此處依賴 developer 對 delegated gateway 的 operational trust。可驗證 execution / ZK proof 延後到黑客松之後。
 
 ---
 
@@ -557,35 +557,7 @@ Arbitrary HTTP、filesystem、不可驗證外部 machine state 不屬核心 atom
 
 ---
 
-## 15. ZK Stretch
-
-ZK 不是黑客松核心 DB 使用流程的必要條件。
-
-Hosted gateway 若被視為 execution-untrusted，可以產生 execution proof：
-
-```text
-canonical snapshot
-      ↓
-gateway executes SQL
-      ↓
-WritePlan + proof
-      ↓
-write-authorizing client verifies
-      ↓
-sign exact WritePlan
-      ↓
-chain commit
-```
-
-Proof 主要解決 arbitrary set-based write 的 completeness / correctness。
-
-Proof 預期由真正授權 write 的 client/application 驗證，不要求鏈上一定再次驗 proof。
-
-Developer 完全自架、信任 execution environment 時，可以不使用 proof。
-
----
-
-## 16. 黑客松明確不處理
+## 15. 黑客松明確不處理
 
 以下不屬於這份 spec：
 
@@ -603,10 +575,11 @@ Developer 完全自架、信任 execution environment 時，可以不使用 proo
 - Supabase Edge Functions
 - 完整 Supabase Auth provider implementation
 - production-grade HA / reorg handling
+- ZK / verifiable execution proof
 
 ---
 
-## 17. 黑客松驗收場景
+## 16. 黑客松驗收場景
 
 至少需要一個代表性 demo：
 
@@ -626,4 +599,3 @@ Developer 完全自架、信任 execution environment 時，可以不使用 proo
 
 - ENS external schema query
 - cross-contract JOIN
-- client-side ZK proof verification
