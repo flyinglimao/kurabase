@@ -553,46 +553,6 @@ T08、T11、T13。
 
 ---
 
-## T16 — ZK execution proof stretch
-
-### 目標
-
-驗證 WritePlan 作為 future verifiable execution boundary 可行。
-
-### 內容
-
-- deterministic commitment：
-  - snapshot identity
-  - schema/program
-  - AuthContext
-  - WritePlan hash
-- gateway proof generation prototype。
-- write-authorizing client verification。
-- client authorization 綁 exact plan hash。
-
-不要求 production prover/performance。
-
-### Acceptance Criteria
-
-至少有一個 set-based mutation demo：
-
-```text
-SQL
-→ gateway executes
-→ WritePlan + proof
-→ client verifies
-→ authorize exact WritePlan
-→ chain commit
-```
-
-修改 WritePlan 後舊 authorization 不得有效。
-
-### Depends on
-
-T06、T09。
-
----
-
 # Milestones
 
 ## M1 — Chain-backed CRUD
@@ -624,11 +584,10 @@ T06、T09。
 時間允許再完成：
 
 - T15
-- T16
 
 結果：
 
-> ENS/cross-contract relational query 與 verifiable execution 展示 Kurabase 相較普通 hosted database 的 DLT-specific 能力。
+> ENS/cross-contract relational query 展示 Kurabase 的 composable DLT data model。
 
 ---
 
@@ -640,5 +599,5 @@ Implementation 必須：
 
 1. 依 milestone / dependency 順序推進。
 2. 優先讓 acceptance test 綠，而不是先完成大量 abstraction。
-3. T01–T07 未形成完整 E2E 前，不提前投入 T15/T16。
+3. T01–T07 未形成完整 E2E 前，不提前投入 T15。
 4. 每個 task 完成時必須對照本文件 acceptance criteria。
