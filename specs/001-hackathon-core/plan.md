@@ -28,7 +28,7 @@ KuraSQL semantic layer
 2. KuraSQL 自己掌握 parser normalization、type semantics、catalog、RLS、constraint、transaction 與 WritePlan。
 3. DataFusion 只作 query execution backend，不把 DataFusion dialect 當成 KuraSQL contract。
 4. Gateway projection 是 derived state；鏈上 contract state 才是正式持久狀態。
-5. 黑客松 core 採 developer operationally trusts delegated gateway；ZK / client verification 為 stretch。
+5. 黑客松 core 採 developer operationally trusts delegated gateway；ZK / verifiable execution 延後，不列入黑客松實作。
 6. 先完成單 chain、單 gateway、單 schema contract 的完整 vertical slice，再擴充 cross-contract。
 
 ---
@@ -386,7 +386,7 @@ Gateway 可重新在最新 snapshot planning。
 
 Row-version/read-set validation 只能證明已讀 row 沒改變，不能證明 arbitrary predicate 沒漏 row。
 
-黑客松 core 接受 developer 對 delegated gateway 的 operational trust；ZK stretch 在 WritePlan boundary 處理解決 completeness / correctness。
+黑客松 core 接受 developer 對 delegated gateway 的 operational trust；可驗證 execution / ZK proof 延後處理。
 
 ---
 
@@ -437,19 +437,6 @@ publishable key
 → delegated gateway signer
 → chain
 ```
-
-### Verifiable stretch
-
-```text
-snapshot + SQL + AuthContext
-→ gateway execution
-→ WritePlan + proof
-→ client verifies
-→ authorize exact plan_hash
-→ commit
-```
-
-因此 core code 必須讓 WritePlan / AuthContext 可 deterministic commitment，但不要求先完成 proof system。
 
 ---
 
@@ -601,7 +588,6 @@ Cross-contract write 最後需形成同一 EVM transaction；若時間不足，�
 - generic executor transaction simulation
 - gas/error 預檢
 - 指定 block 的 EVM state access
-- future proof/execution integration
 
 普通 SQL SELECT 仍由 gateway relational projection 執行。
 
@@ -658,7 +644,6 @@ constraints / UPDATE / DELETE
 → MV
 → migration ALTER
 → cross-contract
-→ ZK stretch
 ```
 
 具體 task dependency 與 acceptance criteria 下一階段再寫。
@@ -673,7 +658,7 @@ constraints / UPDATE / DELETE
 2. projection 黑客松先採 Arrow in-memory + event replay。
 3. on-chain row 採 stable `row_id` + per-column cell storage。
 4. generic `KurabaseSchema` 不執行完整 SQL，只 apply WritePlan。
-5. 黑客松 core 採 developer-trusted delegated gateway，ZK 為 stretch。
+5. 黑客松 core 採 developer-trusted delegated gateway；ZK / verifiable execution 不在黑客松 scope。
 6. Solidity/Foundry 只作 generic executor 的內部 hackathon implementation。
 
 以上確認後才進 Tasks。
