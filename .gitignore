@@ -1,0 +1,11 @@
+node_modules/
+dist/
+target/
+.tools/
+.runtime/
+.env
+contracts/out/
+contracts/cache/
+coverage/
+playwright-report/
+test-results/
