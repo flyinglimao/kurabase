@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>TypeScript SDK — Kurabase</title><link rel="stylesheet" href="/style.css"></head><body><header><a class="logo" href="/"><b>K</b> Kurabase</a><nav><a href="/getting-started.html">Getting started</a><a href="/sdk.html">TypeScript SDK</a><a href="/architecture.html">Architecture</a></nav></header><main class="docs"><aside><a href="#client" class="current">Client</a><a href="#query">Queries</a><a href="#rpc">RPC</a><a href="#admin">Admin</a><a href="#responses">Responses</a></aside><article>
+<p class="eyebrow">@KURABASE/JS</p><h1>An independent, fetch-native TypeScript client</h1><p class="lead">The SDK is not a wrapper around <code>supabase-js</code>. It speaks Kurabase’s REST contract directly while retaining a familiar query-builder shape.</p>
+<h2 id="client">Create a client</h2><pre><code>import { createClient } from '@kurabase/js'
+
+const db = createClient('http://127.0.0.1:8787', 'publishable-key')
+
+// Signing happens in your wallet or identity-provider integration, never in the SDK.
+const exchanged = await db.auth.exchangeSession(preSignedEnvelope)
+// `db` now uses exchanged.data.access_token for later requests.
+</code></pre>
+<h2 id="query">Query and mutate</h2><pre><code>const { data, error, count } = await db
+  .from('posts')
+  .select('id,title,author:profiles!inner(name)', { count: 'exact' })
+  .eq('published', true)
+  .order('id', { ascending: false })
+  .range(0, 24)
+
+await db.from('posts').insert({ id: 1, title: 'Hello' })
+await db.from('posts').upsert({ id: 1, title: 'Hello' }, { onConflict: 'id' }).select()</code></pre><p>Builders are immutable and thenable. Mutations return no rows by default; chain <code>.select()</code> to request a representation. The response shape is <code>{ data, error, count, status, statusText }</code>.</p>
+<h2 id="rpc">Call SQL-language functions</h2><pre><code>const answer = await db.rpc('add_one', { n: 41 })
+const posts = await db.rpc('get_posts', { minimum: 1 }).select('id,title')</code></pre><p>RPC supports scalar, <code>SETOF</code>/table, and atomic mutating SQL-language functions. Procedural functions and unsupported SQL return explicit errors.</p>
+<h2 id="admin">Admin helpers</h2><pre><code>const admin = createClient(url, process.env.KURABASE_SECRET_KEY!)
+const instance = await admin.admin.instance()
+const catalog = await admin.admin.catalog()
+const sql = await admin.admin.sql('select * from posts')
+await admin.admin.migrations.apply({ version: '202609090001', sql: 'create table ...' })</code></pre><p>Instance and catalog introspection work with project access. SQL and migrations require a secret key in a trusted server process. The browser Console keeps a supplied secret and bearer session only in memory.</p>
+<h2 id="responses">Stable errors</h2><p>Gateway errors retain their stable <code>code</code>, <code>message</code>, <code>details</code>, and <code>hint</code>. Client cardinality errors use <code>KURA_CARDINALITY</code>; transport failures use <code>KURA_FETCH</code>.</p>
+</article></main><footer>Kurabase · experimental developer infrastructure</footer></body></html>

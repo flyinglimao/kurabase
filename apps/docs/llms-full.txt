@@ -1,0 +1,65 @@
+# Kurabase — LLM reference
+
+## What it is
+
+Kurabase is an experimental relational database layer whose canonical data state is on a blockchain/DLT. A gateway offers Supabase-style REST routes and maintains a rebuildable local relational projection for queries. The projection is not canonical state.
+
+## Current target and non-goals
+
+Working paths cover versioned migrations, CRUD, common PostgREST-style filters, RLS, relation projections, catalog/admin endpoints, SQL-language RPC, the independent TypeScript SDK, the `@kurabase/cli` migration runner, and a local Anvil workflow. RPC supports scalar, `SETOF`/table, and atomic mutating SQL-language functions. Procedural functions and unsupported SQL return explicit errors. Kurabase does not provide a PostgreSQL wire protocol, complete PostgreSQL or SQL:2023 conformance, production HA, realtime, storage, full auth-provider behavior, cross-chain access, or confidentiality.
+
+Unsupported SQL must report an error rather than silently approximate semantics.
+
+## Local setup
+
+Start a disposable local EVM chain with `anvil --chain-id 31337`. Start the Kurabase gateway using its repository instructions. Use the gateway URL and a publishable key to connect clients. Migrations are versioned SQL units; they are atomic and recorded only after successful execution.
+
+## JavaScript SDK
+
+The standalone package is `@kurabase/js`; it is not a wrapper around `@supabase/supabase-js`.
+
+```ts
+import { createClient } from '@kurabase/js'
+
+const db = createClient('http://127.0.0.1:8787', 'publishable-key', {
+  headers: { Authorization: `Bearer ${walletSession}` }
+})
+
+const result = await db.from('posts')
+  .select('id,title', { count: 'exact' })
+  .eq('published', true)
+  .range(0, 24)
+
+await db.from('posts').insert({ id: 1, title: 'Hello' })
+await db.from('posts').upsert({ id: 1, title: 'Hello' }, { onConflict: 'id' }).select()
+await db.rpc('publish_post', { post_id: 1 })
+```
+
+SDK builders are immutable and thenable. Responses are `{ data, error, count, status, statusText }`. Mutations default to no returned rows and require chained `.select()` for a representation. Stable client error codes include `KURA_CARDINALITY` and `KURA_FETCH`; gateway errors retain their own stable codes.
+
+For a self-signed wallet or configured identity-authority session, sign the session envelope in the host integration, then call `await db.auth.exchangeSession(preSignedEnvelope)`. The SDK posts the envelope to `/auth/v1/session` with the publishable `apikey`, retains the returned bearer token only in the client instance, and does not accept or handle private keys. A pre-existing token can be attached with `db.auth.setAccessToken(token)`.
+
+## REST/admin contract
+
+Data routes are `/rest/v1/:table` and `/rest/v1/rpc/:function`. Requests use `apikey`; authenticated requests add `Authorization: Bearer ...`. Anonymous/default-context reads are possible subject to RLS, while ordinary writes require a valid independently signed session. Routes use PostgREST-style query parameters, `Prefer` for count/return semantics, and inclusive 0-based Range headers.
+
+Instance/catalog introspection accepts project access. Privileged SQL and migration endpoints require the secret key:
+
+- `GET /admin/v1/instance` → metadata including contract, gateway, chainId, owner, gatewayAuthorized, gatewayEpoch, privileged, block_number, revision.
+- `GET /admin/v1/catalog` → `{ catalog: { tableName: { id, name, columns, primary_key, foreign_keys, policies, rls_enabled } }, migrations: [] }`.
+- `POST /admin/v1/sql` with `{ sql }` → `{ rows, affected, block_number, revision, transaction_hash }`.
+- `GET /admin/v1/migrations`; `POST /admin/v1/migrations` with `{ version, sql }`.
+
+`kura migrate --url URL --dir supabase/migrations` reads `KURA_SECRET_KEY` from the environment, validates and sorts `<timestamp>_<name>.sql` files, skips versions returned by the migrations endpoint, then posts `{ version, sql }` for each unapplied migration. `kura sql --url URL --file path.sql` and `kura sql --url URL --query 'select ...'` print the gateway's structured SQL result. The CLI does not accept a wallet private key or run a shell command from migration content.
+
+Secret server keys are privileged. Never ship one in browser JavaScript. The Console keeps a supplied secret key only in tab memory, not local storage.
+
+## Authority and security model
+
+A self-signed wallet session or configured identity-authority session may cryptographically identify a caller for an explicitly delegated gateway. The contract validates gateway delegation and session binding, epoch, expiry and revocation; it does not cryptographically validate per-table approval or arbitrary SQL execution. RLS, constraints, and function semantics run in the delegated gateway, which is a trusted executor and must not create new authority itself. Do not describe this design as trustless execution.
+
+Public-chain data is not confidential. Do not store secrets, private keys, personal data, or conventional confidential database records in public chain state. Encryption, key management, and metadata leakage need separate design work.
+
+## SQL semantics
+
+Relational semantics take ISO SQL:2023 as a reference with necessary PostgreSQL/Supabase extensions. Expected representative support includes SELECT/FROM/WHERE, joins, aggregates, CTEs, views, mutations, RETURNING/upsert, constraints, and RLS. It is not a general claim of full standard conformance.

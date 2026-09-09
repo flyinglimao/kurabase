@@ -1,0 +1,5 @@
+# Kurabase
+
+Kurabase is experimental developer infrastructure: a Supabase-style REST API over chain-backed relational state. The independent `@kurabase/js` client exchanges a pre-signed wallet or configured identity-authority session envelope at `/auth/v1/session`; it never accepts private keys. SQL-language RPC supports scalar, table and atomic mutating functions. Documentation: /getting-started.html, /sdk.html, /architecture.html. Complete machine-readable guide: /llms-full.txt.
+
+Important: this is a hackathon implementation in progress. Do not represent it as production-ready, private, fully PostgreSQL-compatible, or a solution for secret data.

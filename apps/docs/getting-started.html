@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Getting started — Kurabase</title><link rel="stylesheet" href="/style.css"></head><body>
+<header><a class="logo" href="/"><b>K</b> Kurabase</a><nav><a href="/getting-started.html">Getting started</a><a href="/sdk.html">TypeScript SDK</a><a href="/architecture.html">Architecture</a></nav></header>
+<main class="docs"><aside><a class="current" href="#local">Local Anvil</a><a href="#migrate">Migrate</a><a href="#connect">Connect</a><a href="#limits">Limits</a></aside><article>
+<p class="eyebrow">GETTING STARTED</p><h1>Run Kurabase against a local Anvil chain</h1><p class="lead">The shortest path is a local chain, a gateway, and a publishable key created by that gateway. Command names may evolve while the implementation is under active development.</p>
+<h2 id="local">1. Start Anvil</h2><pre><code>anvil --chain-id 31337</code></pre><p>Keep Anvil running. It provides a deterministic local EVM node; its accounts and all values are disposable development fixtures.</p>
+<h2 id="migrate">2. Apply a migration</h2><pre><code>create table posts (
+  id bigint primary key,
+  author_id uuid not null,
+  title text not null
+);
+alter table posts enable row level security;</code></pre><p>Submit each migration as a versioned, atomic unit. The <code>@kurabase/cli</code> runner reads the secret only from its environment, skips applied versions, and records a migration only after success.</p><pre><code>export KURA_SECRET_KEY='server-only-secret'
+kura migrate --url http://127.0.0.1:54322 --dir supabase/migrations
+kura sql --url http://127.0.0.1:54322 --query 'select * from posts'</code></pre><p>Never pass a secret key as a command-line flag or include it in browser code.</p>
+<h2 id="connect">3. Connect the Console or SDK</h2><p>Open the Console, enter the gateway URL and publishable key, then add a gateway-validated bearer token when you need caller identity. The token must derive from a self-signed wallet or configured identity-authority session; the gateway cannot create it. Secret server keys are for privileged server-side/admin actions only and must not be placed in a browser build.</p>
+<h2 id="limits">Known limitations</h2><p>Kurabase does not provide a PostgreSQL wire protocol, full PostgreSQL semantics, durable availability guarantees, realtime subscriptions, storage, or privacy for public-chain data. SQL-language RPC functions support scalar, <code>SETOF</code>/table, and atomic mutating functions. Procedural functions and unsupported SQL return explicit errors rather than silently approximating behavior.</p>
+</article></main><footer>Kurabase · experimental developer infrastructure</footer></body></html>
