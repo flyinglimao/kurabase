@@ -1,0 +1,17 @@
+{
+  "name": "@kurabase/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": { "kura": "./dist/index.js" },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "tsc -p tsconfig.json && node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.2"
+  },
+  "engines": { "node": ">=18" }
+}
